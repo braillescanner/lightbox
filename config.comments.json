@@ -1,0 +1,68 @@
+// Note that this file is only used as a fallback, if no configuration
+// is provided by a module called "config".
+{
+	// IP and port of system that controlls the lighting
+	"light_server_ip": "localhost",
+	"light_server_port": 8082,
+
+	// number of LED strips in your setup. If you are using the recommended
+	// hardware, this has to match the setting in your arduino sketch.
+	"LED_strip_count": 16,
+	// length of a single LED strip in your setup. If you are using the recommended
+	// hardware, this has to match the setting in your arduino sketch.
+	"LED_strip_length": 17,
+	
+	// Serial port that connects the system interfacing with the LED strips
+	// with the system running the HTTP server. Most likely value for windows
+	// hosts "is": "COM1"
+	"light_serial_port_path": "/dev/ttyACM0",
+	// Baud rate of the serial connection. If you are using the recommended
+	// hardware, this has to match the setting in your arduino sketch.
+	"light_serial_baud_rate": 9600,
+
+	// IP and port the camera HTTP server will be running on.
+	"camera_server_ip": "localhost",
+	"camera_server_port": 8083,
+
+	// module name or directory of the NodeJS module grating access
+ 	// to the camera used.
+	"camera_module": "../camera-raspberry-pi",
+	
+	// camera module specific options. Settings below are written for
+	// a raspberry pi camera v2.
+	"camera_options": {
+		// defaults to 5s which is a ridiculous delay
+		"timeout": 500, 
+
+		// width and height of the picture taken, can either be
+		// set using a mode parameter or using an explicit width
+		// and height value.
+		"width":  3280,
+		"height": 2464,
+		"has_mode_support": false,
+		// Mode 2 "is": size 2592x1944, aspect ratio 4"":3, 1-15fps
+		// using the full sensor
+		//"sensor_mode": 3,
+
+		// range is 100 to 800
+		"ISO": 100,
+		// Use these if your camera is mounted incorrectly.
+		"hflip": true,
+		"vflip": true,
+		// add a timestamp and other meta information to a picture.
+		"annotate": 12,
+
+		"exposure_compensation": -10,
+		"metering": "average"
+		// shuterspeed in milliseconds, max is 6000ms
+		//"shutterspeed":
+		// these are all set to their respective default values.
+		//"expore_mode": "auto",
+		//"automatic_white_balance": "off",
+		//"ev_compensation": 0,
+		//"sharpness": 0,
+		//"contrast": 0,
+		//"brightness": 50,
+		//"saturation": 0
+	}
+}

@@ -1,0 +1,217 @@
+<meta charset="utf-8" lang="en"><style
+class="fallback">body{visibility:hidden;}</style> <style>p {text-align: left}</style>
+
+                      **Light-Box Documentation**
+                              Reiner Dolp
+
+                          Revision 8/16/2016
+
+Hardware
+========
+ 
+Hardware Overview
+-----------------
+
+The default configuration is expecting a box with 6 LED-Strips each having 17
+LEDs.  We used an Arduino/Genuino, a 5V 10A power supply and the [LED-strips
+with product id 2432 by Adafruit](https://www.adafruit.com/products/2432).
+
+The white LED-Strip linked is a RGB-Strip with 3 white LEDs instead of colored
+LEDs. This means you can built a light box with colored light without adapting
+the source code or any of the wiring diagrams.
+
+
+******************************************************************************
+*  +-----------+                +--------------+                +-----------+*
+*  | LED Strip +--------+-------+ Power Supply +--------+-------+ LED Strip +*
+*  +-----------+        |       +-------+------+        |       +-----------+*
+*                       |               | GND only      |                    *
+*  +-----------+        |               |               |       +-----------+*
+*  | LED Strip +--------+   DI,CI  +----+----+   DI,CI  +-------+ LED Strip +*
+*  +-----------+        +----------+ Arduino +----------+       +-----------+*
+*                       |          +----+----+          |                    *
+*  +-----------+        |               | Serial API    |       +-----------+*
+*  | LED Strip +--------+        +------+-------+       +-------+ LED Strip +*
+*  +-----------+        |        | Raspberry Pi |       |       +-----------+*
+*        .              |        +------+-------+       |             .      *
+*        .              ⋮               |               ⋮             .      *
+*        .              |               | HTTP API      |             .      *
+*  +-----------+        |               |               |       +-----------+*
+*  | LED Strip +--------+               |               +-------+ LED Strip +*
+*  +-----------+                        v                       +-----------+*
+*                                                                            *
+******************************************************************************
+
+__Wiring overview__ _The number of LED-Strips is limited by the Amperage
+supplied by the Power Supply and the number of PINs of the Arduino. The length
+of a LED-Strip is limited by the resistance of the strip itself. For strips
+longer than 1 meter add an additional `GND` and `5V` every meter. The Serial
+API and HTTP API are described below._
+
+---
+
+__Note:__ The strip numbers on the back of the hardware device do not match the
+strip indices in software. See [Strip reordering](#strip-reordering).
+
+---
+
+The software was designed to drive strips with identical length. Strips of
+different length, however, should work, too. If you are deploying strips of
+different lengths, set the configuration to the length of the longest strip.
+
+Wiring
+------
+
+****************************************************
+*                                 +--------------+ *
+*                                 |    1000μF    | *
+*                                 |  Capacitor   | *
+*                                 +--+--------+--+ *
+*                                    |        |    *
+*                                    o        o    *
+*                                    |        |    *
+*  +------------------+           +--+--------+--+ *
+*  |     LED Strip    |           | Power Supply | *
+*  +-+----+----+----+-+           +--+--------+--+ *
+*    |5V  |CI  |DI  |GND         GND |        | 5V *
+*    o    o    o    o----------------o        o    *
+*    |    |    |                     |        |    *
+*    +----(----(---------------------(--------+    *
+*         |    |                     |             *
+*         |  +-+--------+            |             *
+*         |  | 470 Ohm  |            |             *
+*         |  | Resistor |            |             *
+*         |  +-+--------+            |             *
+*         |    |                     |             *
+*         o    o                     |             *
+*         |    | DIGITAL PIN X       |             *
+*       +-+----+--+                  |             *
+*       | Arduino +------------------+             *
+*       +---------+ GND                            *
+****************************************************
+
+__Wiring for a single LED Strip:__ _A digital PIN is sufficient; no PWM is needed.
+You can also use the Analog Input PINs for `CI` and `DI`. Do not use PIN 0 and
+PIN 1, they interfere with the Serial connection and do not work._
+
+
+# Software
+
+---
+
+__Note__ that you cannot upload new sketches to the arduino while the light-box
+HTTP-server is running. Stop the server, upload the sketch and restart the
+server.
+
+---
+
+
+Configuring the Software for your Hardware Setup
+------------------------------------------------
+
+First __set the number of LEDs and LED-strips__ by changing the constants in
+`light-box/arduino/arduino.ino`:
+
+```c
+	#define NUM_LEDS   17 // Number of LEDs in a strip
+	#define NUM_STRIPS 2  // Number of strips
+```
+
+If you are using the HTTP API, you have to additionally set the options in the
+`config/config` file:
+
+```js
+	light_box_number_of_strips: 2,
+	light_box_strip_length: 17,
+```
+
+You may also have to set the serial port in the configuration file:
+
+```js
+	light_box_serial_port_path: "COM1",
+```
+
+The light-box HTTP server prints a list of all connected serial devices and
+port names on start up to `STDOUT`.
+
+__PINs and Strip Reordering__
+
+
+Deploying the Software
+--------------------
+
+To run the source code, upload the sketch in `light-box/arduino/` to your
+arduino and wire everything like shown below.
+
+If you want to use the HTTP-API, connect a machine using a standard A-B
+USB-cable (this is the one you use to upload your sketches) and run the server
+on it:
+
+```
+	node --es_staging light-box/server/server.js
+```
+
+Testing your Setup using the HTTP API
+-------------------------------------
+
+To test your setup visit URLs of the structure
+`http://localhost:8082/strip/:strip-number/LED/:led-number/intensity/:intensity`,
+where `:intensity` is an integer in the range of `[0, 0xFFFFFF]`. For example:
+Set the 5th, 6th and 7th LED on the first strip to progressively brighter
+values:
+
+```
+	curl http://localhost:8082/strip/0/LED/4/intensity/1
+	curl http://localhost:8082/strip/0/LED/5/intensity/1000
+	curl http://localhost:8082/strip/0/LED/6/intensity/2000
+```
+To change the state of a whole strip, use the format
+`http://localhost:8082/strip/:strip-number/intensity/:intensity`.
+
+This is equivalent to setting the first out-of-bounds LED-address, as a last
+virtual LED changes the intensity of all physical LEDs in the strip. For a
+strip with 30 LEDs, both calls below are equivalent:
+
+```
+	curl http://localhost:8082/strip/0/intensity/0xFF
+	curl http://localhost:8082/strip/0/LED/30/intensity/0xFF
+```
+
+Note that, in contrast to best practices in REST-API design, the server
+expects the HTTP-Method to be `GET`.
+
+The Serial API
+--------------
+
+You can change the baud rate by altering the constant in
+`light-box/arduino/arduino.ino` and reuploading your sketch:
+
+```c
+	#define BAUD_RATE 9600
+```
+
+The serial API expects 4 byte datagrams of the following form:
+
+*****************************************
+* 1st byte                     4th byte *
+* +--------+--------------------------+ *
+* | LED id |         brightness       | *
+* +--------+--------------------------+ *
+*****************************************
+
+whereas LED id is 1 byte and brightness is 3 byte between `0` and `0xFFFFFF`.
+
+If you are using RGB LED-Strips, use the following datagram:
+
+*****************************************
+* 1st byte                     4th byte *
+* +--------+--------+--------+--------+ *
+* | LED id |   R    |   G    |   B    | *
+* +--------+--------+--------+--------+ *
+*****************************************
+
+whereas LED id is 1 byte and R, G, B is the brightness of the red, green, respectively
+blue diode between `0` and `0xFF`.
+
+
+<!-- Markdeep: --><style class="fallback">body{visibility:hidden;white-space:pre;font-family:monospace}</style><script src="markdeep.min.js"></script><script src="https://casual-effects.com/markdeep/latest/markdeep.min.js"></script><script>window.alreadyProcessedMarkdeep||(document.body.style.visibility="visible")</script>

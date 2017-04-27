@@ -1,0 +1,19 @@
+{
+	"indent": 8,
+	"curly": true,
+	"forin": true,
+	"freeze": true,
+	"noarg": true,
+	"singleGroups": true,
+	"strict": true,
+	"unused": true,
+	"undef": true,
+	"browser": true,
+	"devel": true,
+	"jasmine": true,
+	"node": true,
+	"worker": true,
+	"asi": true,
+	"evil": true,
+	"esversion": 6
+}

@@ -1,0 +1,4 @@
+camera-static-mock/*.png
+camera-static-mock/*.binary
+*~*
+node_modules
